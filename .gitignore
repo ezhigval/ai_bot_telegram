@@ -1,0 +1,11 @@
+# Ignore env and build artifacts
+.env
+.env.*
+/vendor/
+/bin/
+/tmp/
+/bot
+/data/
+*.log
+
+

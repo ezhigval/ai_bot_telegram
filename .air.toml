@@ -1,0 +1,21 @@
+root = "."
+tmp_dir = "tmp"
+
+[build]
+  cmd = "go build -o tmp/bot-dev ./cmd/bot"
+  bin = "tmp/bot-dev"
+  full_bin = "tmp/bot-dev"
+  include_ext = ["go"]
+  exclude_dir = ["vendor", "tmp", "data", "docs", ".git"]
+  exclude_file = []
+  exclude_regex = []
+  follow_symlink = true
+  delay = 1000
+
+[log]
+  time = true
+
+[misc]
+  clean_on_exit = true
+
+
