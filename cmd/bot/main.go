@@ -9,17 +9,19 @@ import (
 	"github.com/joho/godotenv"
 
 	"github.com/ezhigval/ai_bot_telegram/internal/agent"
+	"github.com/ezhigval/ai_bot_telegram/internal/config"
 	"github.com/ezhigval/ai_bot_telegram/internal/storage"
 	"github.com/ezhigval/ai_bot_telegram/internal/telegram"
 )
 
 func main() {
+	// Базовые настройки логгера: время + короткий файл/строка.
+	log.SetOutput(os.Stdout)
+	log.SetFlags(log.LstdFlags | log.Lshortfile)
+
 	_ = godotenv.Load() // не падаем, если файла нет, можно задать переменные окружения снаружи
 
-	token := os.Getenv("TELEGRAM_BOT_TOKEN")
-	if token == "" {
-		log.Fatal("TELEGRAM_BOT_TOKEN is not set in environment")
-	}
+	cfg := config.Load()
 
 	// Память на файле — задел для обучения на взаимодействиях.
 	mem := storage.NewFileMemory("data/dialogs.jsonl")
@@ -27,7 +29,7 @@ func main() {
 	// Простой агент без реального LLM и инструментов.
 	ag := agent.NewSimpleAgent(nil, mem, nil)
 
-	bot, err := telegram.NewBot(token, ag)
+	bot, err := telegram.NewBot(cfg.TelegramBotToken, ag)
 	if err != nil {
 		log.Fatalf("failed to create bot: %v", err)
 	}

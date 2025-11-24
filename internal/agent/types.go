@@ -13,6 +13,14 @@ const (
 	MessageTypeFile  MessageType = "file"
 )
 
+// Media — метаданные о медиа/файле из Telegram.
+type Media struct {
+	FileID   string
+	FileName string
+	MimeType string
+	FileSize int64
+}
+
 // Input — то, что агент получает для обработки.
 type Input struct {
 	ChatID int64
@@ -21,7 +29,10 @@ type Input struct {
 	Type MessageType
 
 	Text string
-	// TODO: добавить поля для файлов/медиа (fileID, mimeType и т.п.)
+
+	// Media — необязательные данные о файле/медиа-сообщении.
+	// Для текстовых сообщений обычно nil.
+	Media *Media
 }
 
 // Output — базовый ответ агента.
@@ -50,5 +61,3 @@ type Tool interface {
 	Name() string
 	Execute(ctx context.Context, in Input) (string, error)
 }
-
-

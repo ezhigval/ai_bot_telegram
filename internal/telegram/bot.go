@@ -65,16 +65,75 @@ func (b *Bot) handleUpdate(ctx context.Context, update tgbotapi.Update) {
 		return
 	}
 
+	msg := update.Message
+
 	if b.agent == nil {
 		log.Printf("agent is not configured")
 		return
 	}
 
+	// Определяем тип сообщения Telegram и маппим его на типы агента.
+	msgType := agent.MessageTypeText
+	var media *agent.Media
+
+	switch {
+	case msg.Voice != nil:
+		msgType = agent.MessageTypeVoice
+		v := msg.Voice
+		media = &agent.Media{
+			FileID:   v.FileID,
+			MimeType: v.MimeType,
+			FileSize: int64(v.FileSize),
+		}
+	case msg.Photo != nil:
+		msgType = agent.MessageTypeImage
+		// Обычно последняя фотография в срезе — наибольшего размера.
+		if len(msg.Photo) > 0 {
+			p := msg.Photo[len(msg.Photo)-1]
+			media = &agent.Media{
+				FileID:   p.FileID,
+				FileSize: int64(p.FileSize),
+			}
+		}
+	case msg.Video != nil || msg.VideoNote != nil:
+		msgType = agent.MessageTypeVideo
+		if msg.Video != nil {
+			v := msg.Video
+			media = &agent.Media{
+				FileID:   v.FileID,
+				MimeType: v.MimeType,
+				FileSize: int64(v.FileSize),
+			}
+		} else if msg.VideoNote != nil {
+			v := msg.VideoNote
+			media = &agent.Media{
+				FileID:   v.FileID,
+				FileSize: int64(v.FileSize),
+			}
+		}
+	case msg.Document != nil:
+		msgType = agent.MessageTypeFile
+		d := msg.Document
+		media = &agent.Media{
+			FileID:   d.FileID,
+			FileName: d.FileName,
+			MimeType: d.MimeType,
+			FileSize: int64(d.FileSize),
+		}
+	}
+
+	// Берём текст сообщения или подпись к медиа, если есть.
+	text := msg.Text
+	if text == "" && msg.Caption != "" {
+		text = msg.Caption
+	}
+
 	in := agent.Input{
-		ChatID: update.Message.Chat.ID,
-		UserID: update.Message.From.ID,
-		Type:   agent.MessageTypeText, // пока поддерживаем только текст
-		Text:   update.Message.Text,
+		ChatID: msg.Chat.ID,
+		UserID: msg.From.ID,
+		Type:   msgType,
+		Text:   text,
+		Media:  media,
 	}
 
 	out, err := b.agent.Reply(ctx, in)
@@ -87,12 +146,10 @@ func (b *Bot) handleUpdate(ctx context.Context, update tgbotapi.Update) {
 		return
 	}
 
-	msg := tgbotapi.NewMessage(update.Message.Chat.ID, out.Text)
-	msg.ReplyToMessageID = update.Message.MessageID
+	outMsg := tgbotapi.NewMessage(update.Message.Chat.ID, out.Text)
+	outMsg.ReplyToMessageID = update.Message.MessageID
 
-	if _, err := b.api.Send(msg); err != nil {
+	if _, err := b.api.Send(outMsg); err != nil {
 		log.Printf("failed to send message: %v", err)
 	}
 }
-
-
